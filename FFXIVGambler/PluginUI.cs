@@ -82,7 +82,6 @@ namespace FFXIVGambler
                 ImGui.Spacing();
 
                 ImGui.Text("List of Players in Party:");
-                ImGui.Indent(55);
                 ImGui.Text(player1);
                 ImGui.Text(player2);
                 ImGui.Text(player3);
@@ -90,8 +89,7 @@ namespace FFXIVGambler
                 ImGui.Text(player5);
                 ImGui.Text(player6);
                 ImGui.Text(player7);
-                //ImGui.Image(this.goatImage.ImGuiHandle, new Vector2(this.goatImage.Width, this.goatImage.Height));
-                ImGui.Unindent(55);
+                ImGui.Image(this.goatImage.ImGuiHandle, new Vector2(this.goatImage.Width, this.goatImage.Height));
             }
             ImGui.End();
         }
