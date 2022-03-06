@@ -1,0 +1,13 @@
+{
+  "Author": "Cartruce Montoya",
+  "Name": "Cartruce Montoya",
+  "Punchline": "A Plugin to support FFXIV Games of Chance",
+  "Description": "A plugin that will assist players in running games of chance within FFXIV.  Support for Blackjack in V1, other games added at a later date!",
+  "InternalName": "FFXIVGambler",
+  "ApplicableVersion": "any",
+  "Tags": [
+    "Gamble",
+    "Random",
+    "Blackjack"
+  ]
+}
