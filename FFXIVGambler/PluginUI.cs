@@ -1,6 +1,8 @@
 ﻿using ImGuiNET;
 using System;
 using System.Numerics;
+using Dalamud.Game.ClientState;
+using Dalamud.Game.ClientState.Party;
 
 namespace FFXIVGambler
 {
@@ -9,9 +11,9 @@ namespace FFXIVGambler
     class PluginUI : IDisposable
     {
         private Configuration configuration;
-
+        private PartyList partyMembers;
         private ImGuiScene.TextureWrap goatImage;
-
+        
         // this extra bool exists for ImGui, since you can't ref a property
         private bool visible = false;
         public bool Visible
@@ -28,10 +30,11 @@ namespace FFXIVGambler
         }
 
         // passing in the image here just for simplicity
-        public PluginUI(Configuration configuration, ImGuiScene.TextureWrap goatImage)
+        public PluginUI(Configuration configuration, ImGuiScene.TextureWrap goatImage, PartyList partyMembers)
         {
             this.configuration = configuration;
             this.goatImage = goatImage;
+            this.partyMembers = partyMembers;
         }
 
         public void Dispose()
@@ -58,15 +61,6 @@ namespace FFXIVGambler
             {
                 return;
             }
-
-            String player1 = new String("");
-            String player2 = new String("");
-            String player3 = new String("");
-            String player4 = new String("");
-            String player5 = new String("");
-            String player6 = new String("");
-            String player7 = new String("");
-
             
             ImGui.SetNextWindowSize(new Vector2(375, 330), ImGuiCond.FirstUseEver);
             ImGui.SetNextWindowSizeConstraints(new Vector2(375, 330), new Vector2(float.MaxValue, float.MaxValue));
@@ -78,18 +72,23 @@ namespace FFXIVGambler
                 {
                     SettingsVisible = true;
                 }
-
                 ImGui.Spacing();
-
                 ImGui.Text("List of Players in Party:");
-                ImGui.Text(player1);
-                ImGui.Text(player2);
-                ImGui.Text(player3);
-                ImGui.Text(player4);
-                ImGui.Text(player5);
-                ImGui.Text(player6);
-                ImGui.Text(player7);
-                ImGui.Image(this.goatImage.ImGuiHandle, new Vector2(this.goatImage.Width, this.goatImage.Height));
+                int partyLength = this.partyMembers.Length;
+                for (int i = 0; i < partyLength; i++)
+                {
+                    if (partyMembers[i] != null)
+                    {
+                        PartyMember current = partyMembers[i];
+                        ImGui.Text(current.Name.TextValue);
+                    }
+                }
+                if(partyLength == 0)
+                {
+                    ImGui.Text("Empty or no Party...");
+                }
+
+                //ImGui.Image(this.goatImage.ImGuiHandle, new Vector2(this.goatImage.Width, this.goatImage.Height));
             }
             ImGui.End();
         }

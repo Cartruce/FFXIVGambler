@@ -4,6 +4,7 @@ using Dalamud.Plugin;
 using System;
 using System.IO;
 using System.Reflection;
+using Dalamud.Game.ClientState.Party;
 
 namespace FFXIVGambler
 {
@@ -12,6 +13,8 @@ namespace FFXIVGambler
         public string Name => "FFXIV Gambler";
 
         private const string commandName = "/pmycommand";
+
+        private PartyList partyMembers;
 
         private DalamudPluginInterface PluginInterface { get; init; }
         private CommandManager CommandManager { get; init; }
@@ -22,18 +25,19 @@ namespace FFXIVGambler
 
         public Plugin(
             [RequiredVersion("1.0")] DalamudPluginInterface pluginInterface,
-            [RequiredVersion("1.0")] CommandManager commandManager)
+            [RequiredVersion("1.0")] CommandManager commandManager,
+            [RequiredVersion("1.0")] PartyList partyMembers)
         {
             this.PluginInterface = pluginInterface;
             this.CommandManager = commandManager;
-
+            this.partyMembers = partyMembers;
             this.Configuration = this.PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
             this.Configuration.Initialize(this.PluginInterface);
 
             // you might normally want to embed resources and load them from the manifest stream
             var imagePath = Path.Combine(PluginInterface.AssemblyLocation.Directory?.FullName!, "goat.png");
             var goatImage = this.PluginInterface.UiBuilder.LoadImage(imagePath);
-            this.PluginUi = new PluginUI(this.Configuration, goatImage);
+            this.PluginUi = new PluginUI(this.Configuration, goatImage, this.partyMembers);
 
             this.CommandManager.AddHandler(commandName, new CommandInfo(OnCommand)
             {
