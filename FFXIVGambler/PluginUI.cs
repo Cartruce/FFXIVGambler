@@ -1,8 +1,11 @@
 ﻿using ImGuiNET;
 using System;
 using System.Numerics;
-using Dalamud.Game.ClientState;
+using Dalamud.Game.ClientState.Objects;
 using Dalamud.Game.ClientState.Party;
+using Dalamud.Game.Gui;
+using Dalamud.Game.Text;
+using Dalamud.Game.ClientState.Objects.Types;
 
 namespace FFXIVGambler
 {
@@ -11,8 +14,11 @@ namespace FFXIVGambler
     class PluginUI : IDisposable
     {
         private Configuration configuration;
+        private ImGuiScene.TextureWrap cardImage;
+        private CardDeck deck;
+        private ChatGui chat;
         private PartyList partyMembers;
-        private ImGuiScene.TextureWrap goatImage;
+        private TargetManager targetManager;
         
         // this extra bool exists for ImGui, since you can't ref a property
         private bool visible = false;
@@ -30,16 +36,20 @@ namespace FFXIVGambler
         }
 
         // passing in the image here just for simplicity
-        public PluginUI(Configuration configuration, ImGuiScene.TextureWrap goatImage, PartyList partyMembers)
+        public PluginUI(Configuration configuration, ImGuiScene.TextureWrap cardImage, PartyList partyMembers, ChatGui chat, TargetManager targetManager, CardDeck deck)
         {
             this.configuration = configuration;
-            this.goatImage = goatImage;
+            this.cardImage = cardImage;
             this.partyMembers = partyMembers;
+            this.deck = deck;
+            this.chat = chat;
+            this.chat.Enable();
+            this.targetManager = targetManager;
         }
 
         public void Dispose()
         {
-            this.goatImage.Dispose();
+            this.cardImage.Dispose();
         }
 
         public void Draw()
@@ -52,7 +62,6 @@ namespace FFXIVGambler
             // draw delegates as low as possible.
 
             DrawMainWindow();
-            DrawSettingsWindow();
         }
 
         public void DrawMainWindow()
@@ -62,58 +71,56 @@ namespace FFXIVGambler
                 return;
             }
             
-            ImGui.SetNextWindowSize(new Vector2(375, 330), ImGuiCond.FirstUseEver);
-            ImGui.SetNextWindowSizeConstraints(new Vector2(375, 330), new Vector2(float.MaxValue, float.MaxValue));
-            if (ImGui.Begin("My Amazing Window", ref this.visible, ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse))
+            ImGui.SetNextWindowSize(new Vector2(200, 200), ImGuiCond.FirstUseEver);
+            ImGui.SetNextWindowSizeConstraints(new Vector2(200, 200), new Vector2(float.MaxValue, float.MaxValue));
+            if (ImGui.Begin("Deck of Cards", ref this.visible, ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse))
             {
-                ImGui.Text($"The random config bool is {this.configuration.SomePropertyToBeSavedAndWithADefault}");
-
-                if (ImGui.Button("Show Settings"))
+                if (ImGui.Button("Draw Card"))
                 {
-                    SettingsVisible = true;
+                    DrawCard();
+                }
+                if(ImGui.Button("Shuffle Deck"))
+                {
+                    ShuffleDeck();
                 }
                 ImGui.Spacing();
-                ImGui.Text("List of Players in Party:");
-                int partyLength = this.partyMembers.Length;
-                for (int i = 0; i < partyLength; i++)
-                {
-                    if (partyMembers[i] != null)
-                    {
-                        PartyMember current = partyMembers[i];
-                        ImGui.Text(current.Name.TextValue);
-                    }
-                }
-                if(partyLength == 0)
-                {
-                    ImGui.Text("Empty or no Party...");
-                }
+                
 
-                //ImGui.Image(this.goatImage.ImGuiHandle, new Vector2(this.goatImage.Width, this.goatImage.Height));
+                ImGui.Image(this.cardImage.ImGuiHandle, new Vector2(120,120));
             }
             ImGui.End();
         }
 
-        public void DrawSettingsWindow()
+        public void DrawCard()
         {
-            if (!SettingsVisible)
+            
+            if (this.targetManager.Target != null)
             {
-                return;
-            }
+                GameObject target = this.targetManager.Target;
+                string card = this.deck.drawCard();
+                XivChatEntry message = new XivChatEntry();
+                message.Type = XivChatType.Party;
+                message.Message = "Draw Card for " + target.Name + ": " + card;
+                message.SenderId = partyMembers[0].ObjectId;
+                message.Name = partyMembers[0].Name;
+                this.chat.PrintChat(message);
 
-            ImGui.SetNextWindowSize(new Vector2(232, 75), ImGuiCond.Always);
-            if (ImGui.Begin("A Wonderful Configuration Window", ref this.settingsVisible,
-                ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse))
-            {
-                // can't ref a property, so use a local copy
-                var configValue = this.configuration.SomePropertyToBeSavedAndWithADefault;
-                if (ImGui.Checkbox("Random Config Bool", ref configValue))
-                {
-                    this.configuration.SomePropertyToBeSavedAndWithADefault = configValue;
-                    // can save immediately on change, if you don't want to provide a "Save and Close" button
-                    this.configuration.Save();
-                }
+                this.chat.UpdateQueue();
             }
-            ImGui.End();
+            else
+            {
+                this.chat.Print("No Target for card!");
+                this.chat.UpdateQueue();
+            }
         }
+
+        public void ShuffleDeck()
+        {
+            this.deck.reshuffleDeck();
+            this.chat.Print("Deck Shuffled!  Fresh Deck ready!");
+            this.chat.UpdateQueue();
+        }
+
+
     }
 }

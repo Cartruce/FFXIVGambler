@@ -5,6 +5,10 @@ using System;
 using System.IO;
 using System.Reflection;
 using Dalamud.Game.ClientState.Party;
+using Dalamud.Game.Gui;
+using Dalamud.Game.ClientState.Objects;
+using Dalamud.Game.Text;
+using Dalamud.Game.ClientState.Objects.Types;
 
 namespace FFXIVGambler
 {
@@ -12,9 +16,15 @@ namespace FFXIVGambler
     {
         public string Name => "FFXIV Gambler";
 
-        private const string commandName = "/pmycommand";
+        private const string commandName = "/deck";
+        private const string commandDraw = "/draw";
+        private const string commandShuffle = "/shuffle";
 
         private PartyList partyMembers;
+
+        private TargetManager targetManager;
+        private ChatGui chat;
+        private CardDeck deck;
 
         private DalamudPluginInterface PluginInterface { get; init; }
         private CommandManager CommandManager { get; init; }
@@ -26,22 +36,35 @@ namespace FFXIVGambler
         public Plugin(
             [RequiredVersion("1.0")] DalamudPluginInterface pluginInterface,
             [RequiredVersion("1.0")] CommandManager commandManager,
-            [RequiredVersion("1.0")] PartyList partyMembers)
+            [RequiredVersion("1.0")] PartyList partyMembers,
+            [RequiredVersion("1.0")] ChatGui chat,
+            [RequiredVersion("1.0")] TargetManager targetManager)
         {
             this.PluginInterface = pluginInterface;
             this.CommandManager = commandManager;
             this.partyMembers = partyMembers;
+            this.targetManager = targetManager;
+            this.chat = chat;
+            this.deck = new CardDeck();
             this.Configuration = this.PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
             this.Configuration.Initialize(this.PluginInterface);
 
             // you might normally want to embed resources and load them from the manifest stream
-            var imagePath = Path.Combine(PluginInterface.AssemblyLocation.Directory?.FullName!, "goat.png");
-            var goatImage = this.PluginInterface.UiBuilder.LoadImage(imagePath);
-            this.PluginUi = new PluginUI(this.Configuration, goatImage, this.partyMembers);
+            var imagePath = Path.Combine(PluginInterface.AssemblyLocation.Directory?.FullName!, "Cards.jpg");
+            var cardImage = this.PluginInterface.UiBuilder.LoadImage(imagePath);
+            this.PluginUi = new PluginUI(this.Configuration, cardImage, this.partyMembers, chat, targetManager, this.deck);
 
             this.CommandManager.AddHandler(commandName, new CommandInfo(OnCommand)
             {
-                HelpMessage = "A useful message to display in /xlhelp"
+                HelpMessage = "Open a UI window to manage deck."
+            });
+            this.CommandManager.AddHandler(commandDraw, new CommandInfo(OnCommandDraw)
+            {
+                HelpMessage = "Draw a new card for currently targeted player."
+            });
+            this.CommandManager.AddHandler(commandShuffle, new CommandInfo(OnCommandShuffle)
+            {
+                HelpMessage = "Reset and Shuffle the deck."
             });
 
             this.PluginInterface.UiBuilder.Draw += DrawUI;
@@ -52,12 +75,43 @@ namespace FFXIVGambler
         {
             this.PluginUi.Dispose();
             this.CommandManager.RemoveHandler(commandName);
+            this.CommandManager.RemoveHandler(commandDraw);
+            this.CommandManager.RemoveHandler(commandShuffle);
         }
 
         private void OnCommand(string command, string args)
         {
             // in response to the slash command, just display our main ui
             this.PluginUi.Visible = true;
+        }
+
+        private void OnCommandDraw(string command, string args)
+        {
+            if (this.targetManager.Target != null)
+            {
+                GameObject target = this.targetManager.Target;
+                string card = this.deck.drawCard();
+                XivChatEntry message = new XivChatEntry();
+                message.Type = XivChatType.Party;
+                message.Message = "Draw Card for " + target.Name + ": " + card;
+                message.SenderId = partyMembers[0].ObjectId;
+                message.Name = partyMembers[0].Name;
+                this.chat.PrintChat(message);
+
+                this.chat.UpdateQueue();
+            }
+            else
+            {
+                this.chat.Print("No Target for card!");
+                this.chat.UpdateQueue();
+            }
+        }
+
+        private void OnCommandShuffle(string command, string args)
+        {
+            this.deck.reshuffleDeck();
+            this.chat.Print("Deck Shuffled!  Fresh Deck ready!");
+            this.chat.UpdateQueue();
         }
 
         private void DrawUI()
