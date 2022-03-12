@@ -4,7 +4,6 @@ using System.Numerics;
 using Dalamud.Game.ClientState.Objects;
 using Dalamud.Game.ClientState.Party;
 using Dalamud.Game.Gui;
-using Dalamud.Game.Text;
 using Dalamud.Game.ClientState.Objects.Types;
 
 namespace FFXIVGambler
@@ -19,7 +18,7 @@ namespace FFXIVGambler
         private ChatGui chat;
         private PartyList partyMembers;
         private TargetManager targetManager;
-        
+
         // this extra bool exists for ImGui, since you can't ref a property
         private bool visible = false;
         public bool Visible
@@ -43,6 +42,7 @@ namespace FFXIVGambler
             this.partyMembers = partyMembers;
             this.deck = deck;
             this.chat = chat;
+            //this.xivchat = xivchat;
             this.chat.Enable();
             this.targetManager = targetManager;
         }
@@ -98,14 +98,9 @@ namespace FFXIVGambler
             {
                 GameObject target = this.targetManager.Target;
                 string card = this.deck.drawCard();
-                XivChatEntry message = new XivChatEntry();
-                message.Type = XivChatType.Party;
-                message.Message = "Draw Card for " + target.Name + ": " + card;
-                message.SenderId = partyMembers[0].ObjectId;
-                message.Name = partyMembers[0].Name;
-                this.chat.PrintChat(message);
+ 
+                string message = "Draw Card for " + target.Name + ": " + card;
 
-                this.chat.UpdateQueue();
             }
             else
             {

@@ -46,12 +46,6 @@ namespace FFXIVGambler
         }
 
 
-        public string printDeck()
-        {
-            //debug method to print out the current deck contents in order.
-            return deck.ToString();
-        }
-
         public string drawCard()
         {
             if (deck.Count != 0)

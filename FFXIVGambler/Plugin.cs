@@ -3,12 +3,11 @@ using Dalamud.IoC;
 using Dalamud.Plugin;
 using System;
 using System.IO;
-using System.Reflection;
 using Dalamud.Game.ClientState.Party;
 using Dalamud.Game.Gui;
 using Dalamud.Game.ClientState.Objects;
-using Dalamud.Game.Text;
 using Dalamud.Game.ClientState.Objects.Types;
+using XivCommon;
 
 namespace FFXIVGambler
 {
@@ -25,13 +24,13 @@ namespace FFXIVGambler
         private TargetManager targetManager;
         private ChatGui chat;
         private CardDeck deck;
-
+        
+        
         private DalamudPluginInterface PluginInterface { get; init; }
         private CommandManager CommandManager { get; init; }
         private Configuration Configuration { get; init; }
         private PluginUI PluginUi { get; init; }
 
-        private String player1 = new String("");
 
         public Plugin(
             [RequiredVersion("1.0")] DalamudPluginInterface pluginInterface,
@@ -46,10 +45,10 @@ namespace FFXIVGambler
             this.targetManager = targetManager;
             this.chat = chat;
             this.deck = new CardDeck();
+            
             this.Configuration = this.PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
             this.Configuration.Initialize(this.PluginInterface);
 
-            // you might normally want to embed resources and load them from the manifest stream
             var imagePath = Path.Combine(PluginInterface.AssemblyLocation.Directory?.FullName!, "Cards.jpg");
             var cardImage = this.PluginInterface.UiBuilder.LoadImage(imagePath);
             this.PluginUi = new PluginUI(this.Configuration, cardImage, this.partyMembers, chat, targetManager, this.deck);
@@ -91,14 +90,10 @@ namespace FFXIVGambler
             {
                 GameObject target = this.targetManager.Target;
                 string card = this.deck.drawCard();
-                XivChatEntry message = new XivChatEntry();
-                message.Type = XivChatType.Party;
-                message.Message = "Draw Card for " + target.Name + ": " + card;
-                message.SenderId = partyMembers[0].ObjectId;
-                message.Name = partyMembers[0].Name;
-                this.chat.PrintChat(message);
+                string message = "Draw Card for " + target.Name + ": " + card;
+                var Common = new XivCommonBase(Hooks.Talk);
+                Common.Functions.Chat.SendMessage(message);
 
-                this.chat.UpdateQueue();
             }
             else
             {
