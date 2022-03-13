@@ -8,6 +8,7 @@ using Dalamud.Game.Gui;
 using Dalamud.Game.ClientState.Objects;
 using Dalamud.Game.ClientState.Objects.Types;
 using XivCommon;
+using ImGuiNET;
 
 namespace FFXIVGambler
 {
@@ -86,19 +87,50 @@ namespace FFXIVGambler
 
         private void OnCommandDraw(string command, string args)
         {
-            if (this.targetManager.Target != null)
+            if (args == null || args.Length == 0 || args == "1")
             {
-                GameObject target = this.targetManager.Target;
-                string card = this.deck.drawCard();
-                string message = "Draw Card for " + target.Name + ": " + card;
-                var Common = new XivCommonBase(Hooks.Talk);
-                Common.Functions.Chat.SendMessage(message);
+                if (this.targetManager.Target != null)
+                {
+                    GameObject target = this.targetManager.Target;
+                    string card = this.deck.drawCard();
+                    string message = "Draw Card for " + target.Name + ": " + card;
+                    //this.chat.Print(message);
+                    ImGui.SetClipboardText(message);
+                    //var Common = new XivCommonBase(Hooks.Talk);
+                    //Common.Functions.Chat.SendMessage(message);
 
+                }
+                else
+                {
+                    this.chat.Print("No Target for card!");
+                    this.chat.UpdateQueue();
+                }
             }
             else
             {
-                this.chat.Print("No Target for card!");
-                this.chat.UpdateQueue();
+                //args will be number of draws to make.
+                string card = "";
+                int numcards = 0;
+                if (args != null)
+                {
+                    string numCards = args;
+                    numcards = int.Parse(numCards);
+                }
+                for(int i = 0; i < numcards; i++)
+                {
+                    card = card + this.deck.drawCard() + "  ";
+                }
+                if (this.targetManager.Target != null)
+                {
+                    GameObject target = this.targetManager.Target;
+                    string message = "Draw " + args[0] + " cards for " + target.Name + ": " + card;
+                    //this.chat.Print(message);
+                    ImGui.SetClipboardText(message);
+                    //var Common = new XivCommonBase(Hooks.Talk);
+                    //Common.Functions.Chat.SendMessage(message);
+
+                }
+                
             }
         }
 
