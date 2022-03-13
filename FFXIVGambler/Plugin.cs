@@ -103,6 +103,7 @@ namespace FFXIVGambler
                 else
                 {
                     this.chat.Print("No Target for card!");
+                    ImGui.SetClipboardText("No Target for card!");
                     this.chat.UpdateQueue();
                 }
             }
@@ -123,14 +124,19 @@ namespace FFXIVGambler
                 if (this.targetManager.Target != null)
                 {
                     GameObject target = this.targetManager.Target;
-                    string message = "Draw " + args[0] + " cards for " + target.Name + ": " + card;
+                    string message = "Draw " + args + " cards for " + target.Name + ": " + card;
                     //this.chat.Print(message);
                     ImGui.SetClipboardText(message);
                     //var Common = new XivCommonBase(Hooks.Talk);
                     //Common.Functions.Chat.SendMessage(message);
 
                 }
-                
+                else
+                {
+                    this.chat.Print("No Target for card!");
+                    ImGui.SetClipboardText("No Target for card!");
+                    this.chat.UpdateQueue();
+                }
             }
         }
 
