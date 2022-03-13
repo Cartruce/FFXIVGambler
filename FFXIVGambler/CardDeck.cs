@@ -8,8 +8,8 @@ namespace FFXIVGambler
 {
     internal class CardDeck
     {
-        //private static List<string> newDeck = new List<string>{ "A♥", "2♥", "3♥", "4♥", "5♥", "6♥", "7♥", "8♥", "9♥", "10♥", "J♥", "Q♥", "K♥", "A♦", "2♦", "3♦", "4♦", "5♦", "6♦", "7♦", "8♦", "9♦", "J♦", "Q♦", "K♦", "A♣", "2♣", "3♣", "4♣", "5♣", "6♣", "7♣", "8♣", "9♣", "10♣", "J♣", "Q♣", "K♣", "A♠", "2♠", "3♠", "4♠", "5♠", "6♠", "7♠", "8♠", "9♠", "10♠", "J♠", "Q♠", "K♠" };
-        private static string[] newDeck = new string[]{ "A♥", "2♥", "3♥", "4♥", "5♥", "6♥", "7♥", "8♥", "9♥", "10♥", "J♥", "Q♥", "K♥", "A♦", "2♦", "3♦", "4♦", "5♦", "6♦", "7♦", "8♦", "9♦", "J♦", "Q♦", "K♦", "A♣", "2♣", "3♣", "4♣", "5♣", "6♣", "7♣", "8♣", "9♣", "10♣", "J♣", "Q♣", "K♣", "A♠", "2♠", "3♠", "4♠", "5♠", "6♠", "7♠", "8♠", "9♠", "10♠", "J♠", "Q♠", "K♠" };
+        //private static List<string> newDeck = new List<string>{ "A♥", "2♥", "3♥", "4♥", "5♥", "6♥", "7♥", "8♥", "9♥", "10♥", "J♥", "Q♥", "K♥", "A♦", "2♦", "3♦", "4♦", "5♦", "6♦", "7♦", "8♦", "9♦", "10♦", "J♦", "Q♦", "K♦", "A♣", "2♣", "3♣", "4♣", "5♣", "6♣", "7♣", "8♣", "9♣", "10♣", "J♣", "Q♣", "K♣", "A♠", "2♠", "3♠", "4♠", "5♠", "6♠", "7♠", "8♠", "9♠", "10♠", "J♠", "Q♠", "K♠" };
+        private static string[] newDeck = new string[]{ "A♥", "2♥", "3♥", "4♥", "5♥", "6♥", "7♥", "8♥", "9♥", "10♥", "J♥", "Q♥", "K♥", "A♦", "2♦", "3♦", "4♦", "5♦", "6♦", "7♦", "8♦", "9♦", "10♦", "J♦", "Q♦", "K♦", "A♣", "2♣", "3♣", "4♣", "5♣", "6♣", "7♣", "8♣", "9♣", "10♣", "J♣", "Q♣", "K♣", "A♠", "2♠", "3♠", "4♠", "5♠", "6♠", "7♠", "8♠", "9♠", "10♠", "J♠", "Q♠", "K♠" };
         private Stack<string> deck = new Stack<string>();
         public CardDeck()
         {
@@ -22,10 +22,12 @@ namespace FFXIVGambler
             //reinstance deck from 'newDeck' and shuffle the deck
             deck.Clear();
             //create new shuffled array
-            string[] shuffledDeck = newDeck;
+
+            string[] shuffledDeck = new string[52];
+            shuffledDeck = newDeck;
             Shuffle(shuffledDeck);
-            foreach (var item in shuffledDeck)
-                deck.Push(item);
+            for(int i = 0; i < shuffledDeck.Length; i++)
+                deck.Push(shuffledDeck[i]);
             return deck;
         }
 
@@ -33,7 +35,7 @@ namespace FFXIVGambler
         {
             Random rand = new Random();
             int n = array.Length;
-            for (int i = 0; i < (n - 1); i++)
+            for (int i = 0; i < n; i++)
             {
                 // Use Next on random instance with an argument.
                 // ... The argument is an exclusive bound.
