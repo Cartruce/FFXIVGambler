@@ -4,7 +4,7 @@ using System.Numerics;
 using Dalamud.Game.ClientState.Objects;
 using Dalamud.Game.ClientState.Party;
 using Dalamud.Game.Gui;
-using Dalamud.Game.ClientState.Objects.Types;
+using System.Collections.Generic;
 
 namespace FFXIVGambler
 {
@@ -18,6 +18,10 @@ namespace FFXIVGambler
         private ChatGui chat;
         private PartyList partyMembers;
         private TargetManager targetManager;
+        private SortedDictionary<String, Hand> playerHands;
+        private SortedDictionary<String, int> playerTotals;
+        private String dealerName;
+        private Hand dealerHand;
 
         // this extra bool exists for ImGui, since you can't ref a property
         private bool visible = false;
@@ -35,16 +39,17 @@ namespace FFXIVGambler
         }
 
         // passing in the image here just for simplicity
-        public PluginUI(Configuration configuration, ImGuiScene.TextureWrap cardImage, PartyList partyMembers, ChatGui chat, TargetManager targetManager, CardDeck deck)
+        public PluginUI(Configuration configuration, ImGuiScene.TextureWrap cardImage, PartyList partyMembers, ChatGui chat, TargetManager targetManager, CardDeck deck, SortedDictionary<String,Hand> playerHands, Hand dealerHand, string dealerName)
         {
-            this.configuration = configuration;
             this.cardImage = cardImage;
             this.partyMembers = partyMembers;
             this.deck = deck;
             this.chat = chat;
-            //this.xivchat = xivchat;
             this.chat.Enable();
             this.targetManager = targetManager;
+            this.playerHands = playerHands;
+            this.dealerHand = dealerHand;
+            this.dealerName = dealerName;
         }
 
         public void Dispose()
@@ -71,51 +76,106 @@ namespace FFXIVGambler
                 return;
             }
             
-            ImGui.SetNextWindowSize(new Vector2(200, 200), ImGuiCond.FirstUseEver);
-            ImGui.SetNextWindowSizeConstraints(new Vector2(200, 200), new Vector2(float.MaxValue, float.MaxValue));
-            if (ImGui.Begin("Deck of Cards", ref this.visible, ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse))
+            ImGui.SetNextWindowSize(new Vector2(400, 200), ImGuiCond.FirstUseEver);
+            ImGui.SetNextWindowSizeConstraints(new Vector2(400, 200), new Vector2(float.MaxValue, float.MaxValue));
+            if (ImGui.Begin("Blackjack", ref this.visible, ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse))
             {
-                if (ImGui.Button("Draw Card"))
-                {
-                    DrawCard();
-                }
-                if(ImGui.Button("Shuffle Deck"))
-                {
-                    ShuffleDeck();
-                }
-                ImGui.Spacing();
-                
 
-                ImGui.Image(this.cardImage.ImGuiHandle, new Vector2(120,120));
+                ImGui.SetWindowFontScale((float)1.3);
+                ImGui.Spacing();
+                string dealerHand = "Dealer: " + this.dealerName + " : " + this.dealerHand.getTotal() + " : " + this.dealerHand.showHand();
+                if (this.dealerHand.checkBlackjack())
+                {
+                    dealerHand = dealerHand + " BLACKJACK!";
+                }
+                else if (this.dealerHand.getTotal() > 21)
+                {
+                    dealerHand = dealerHand + " BUST";
+                }
+                ImGui.Text(dealerHand);
+                if (this.dealerHand.getTotal() > 16)
+                {
+                    //finish the hand!
+                    if (this.playerHands != null)
+                    {
+                        List<string> playerList = new List<String>(this.playerHands.Keys);
+                        foreach (string player in playerList)
+                        {
+                            if (player != null)
+                            {
+                                Hand playerHand = new Hand();
+                                _ = this.playerHands.TryGetValue(player, out playerHand);
+                                string messageHand = player + " : " + playerHand.getTotal() + " : " + playerHand.showHand();
+                                messageHand = AddResult(playerHand, messageHand);
+                                ImGui.Text(messageHand);
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    if (this.playerHands != null)
+                    {
+                        List<string> playerList = new List<String>(this.playerHands.Keys);
+                        foreach (string player in playerList)
+                        {
+                            if (player != null)
+                            {
+                                Hand playerHand = new Hand();
+                                _ = this.playerHands.TryGetValue(player, out playerHand);
+                                string messageHand = player + " : " + playerHand.getTotal() + " : " + playerHand.showHand();
+                                if (playerHand.checkBlackjack())
+                                {
+                                    messageHand = messageHand + " BLACKJACK!";
+                                }
+                                else if(playerHand.getTotal() > 21)
+                                {
+                                    messageHand = messageHand + " BUST";
+                                }
+                                ImGui.Text(messageHand);
+                            }
+                        }
+                    }
+                }
+
             }
             ImGui.End();
         }
 
-        public void DrawCard()
+        private string AddResult(Hand playerHand, string messageHand)
         {
-            
-            if (this.targetManager.Target != null)
+            if (playerHand.checkBlackjack())
             {
-                GameObject target = this.targetManager.Target;
-                string card = this.deck.drawCard();
- 
-                string message = "Draw Card for " + target.Name + ": " + card;
-
+                messageHand = messageHand + " BLACKJACK!";
+            }
+            else if (playerHand.getTotal() > 21)
+            {
+                messageHand = messageHand + " BUST";
             }
             else
             {
-                this.chat.Print("No Target for card!");
-                this.chat.UpdateQueue();
+                if (this.dealerHand.checkBlackjack())
+                {
+                    messageHand = messageHand + " LOSS";
+                }
+                else if(this.dealerHand.getTotal() > 21)
+                {
+                    messageHand = messageHand + " WIN";
+                }
+                else if (this.dealerHand.getTotal() == playerHand.getTotal())
+                {
+                    messageHand = messageHand + " PUSH";
+                }
+                else if (this.dealerHand.getTotal() > playerHand.getTotal())
+                {
+                    messageHand = messageHand + " LOSS";
+                }
+                else
+                {
+                    messageHand = messageHand + " WIN";
+                }
             }
+            return messageHand;
         }
-
-        public void ShuffleDeck()
-        {
-            this.deck.reshuffleDeck();
-            this.chat.Print("Deck Shuffled!  Fresh Deck ready!");
-            this.chat.UpdateQueue();
-        }
-
-
     }
 }

@@ -7,8 +7,9 @@ using Dalamud.Game.ClientState.Party;
 using Dalamud.Game.Gui;
 using Dalamud.Game.ClientState.Objects;
 using Dalamud.Game.ClientState.Objects.Types;
-using XivCommon;
 using ImGuiNET;
+using System.Collections.Generic;
+using Dalamud.Game.Text.SeStringHandling;
 
 namespace FFXIVGambler
 {
@@ -16,17 +17,21 @@ namespace FFXIVGambler
     {
         public string Name => "FFXIV Gambler";
 
-        private const string commandName = "/deck";
+        private const string commandName = "/blackjack";
         private const string commandDraw = "/draw";
         private const string commandShuffle = "/shuffle";
+        private const string commandDealer = "/dealer";
 
         private PartyList partyMembers;
 
         private TargetManager targetManager;
         private ChatGui chat;
         private CardDeck deck;
-        
-        
+        private Hand dealerHand;
+        private string dealerName;
+        private SortedDictionary<String, Hand> playerHands;
+
+
         private DalamudPluginInterface PluginInterface { get; init; }
         private CommandManager CommandManager { get; init; }
         private Configuration Configuration { get; init; }
@@ -46,21 +51,28 @@ namespace FFXIVGambler
             this.targetManager = targetManager;
             this.chat = chat;
             this.deck = new CardDeck();
-            
+            this.dealerHand = new Hand();
+            if(partyMembers != null)
+            this.dealerName = partyMembers[(int)partyMembers.PartyLeaderIndex].Name.TextValue;
+            this.playerHands = new SortedDictionary<String, Hand>();
             this.Configuration = this.PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
             this.Configuration.Initialize(this.PluginInterface);
 
             var imagePath = Path.Combine(PluginInterface.AssemblyLocation.Directory?.FullName!, "Cards.jpg");
             var cardImage = this.PluginInterface.UiBuilder.LoadImage(imagePath);
-            this.PluginUi = new PluginUI(this.Configuration, cardImage, this.partyMembers, chat, targetManager, this.deck);
+            this.PluginUi = new PluginUI(this.Configuration, cardImage, this.partyMembers, chat, targetManager, this.deck, this.playerHands, this.dealerHand, this.dealerName);
 
             this.CommandManager.AddHandler(commandName, new CommandInfo(OnCommand)
             {
-                HelpMessage = "Open a UI window to manage deck."
+                HelpMessage = "Open a UI window to manage blackjack game."
             });
             this.CommandManager.AddHandler(commandDraw, new CommandInfo(OnCommandDraw)
             {
                 HelpMessage = "Draw a new card for currently targeted player."
+            });
+            this.CommandManager.AddHandler(commandDealer, new CommandInfo(OnCommandDealer)
+            {
+                HelpMessage = "Draw a card for the dealer (party leader)."
             });
             this.CommandManager.AddHandler(commandShuffle, new CommandInfo(OnCommandShuffle)
             {
@@ -71,17 +83,31 @@ namespace FFXIVGambler
             this.PluginInterface.UiBuilder.OpenConfigUi += DrawConfigUI;
         }
 
+        private void OnCommandDealer(string command, string args)
+        {
+
+            string card = this.deck.drawCard();
+            string message = "Draw Card for " + this.dealerName + ": " + card;
+            //this.chat.Print(message);
+            ImGui.SetClipboardText(message);
+            //var Common = new XivCommonBase(Hooks.Talk);
+            //Common.Functions.Chat.SendMessage(message);
+            if (!card.Contains("Empty"))
+                this.dealerHand.addCard(card);
+        }
+
         public void Dispose()
         {
             this.PluginUi.Dispose();
             this.CommandManager.RemoveHandler(commandName);
             this.CommandManager.RemoveHandler(commandDraw);
             this.CommandManager.RemoveHandler(commandShuffle);
+            this.CommandManager.RemoveHandler(commandDealer);
         }
 
         private void OnCommand(string command, string args)
         {
-            // in response to the slash command, just display our main ui
+            OnCommandShuffle(command, args);
             this.PluginUi.Visible = true;
         }
 
@@ -98,7 +124,8 @@ namespace FFXIVGambler
                     ImGui.SetClipboardText(message);
                     //var Common = new XivCommonBase(Hooks.Talk);
                     //Common.Functions.Chat.SendMessage(message);
-
+                    if(!card.Contains("Empty"))
+                    AddDrawToPlayer(target.Name, card);
                 }
                 else
                 {
@@ -111,25 +138,27 @@ namespace FFXIVGambler
             {
                 //args will be number of draws to make.
                 string card = "";
+                string cards = "";
                 int numcards = 0;
                 if (args != null)
                 {
                     string numCards = args;
                     numcards = int.Parse(numCards);
                 }
-                for(int i = 0; i < numcards; i++)
-                {
-                    card = card + this.deck.drawCard() + "  ";
-                }
                 if (this.targetManager.Target != null)
                 {
                     GameObject target = this.targetManager.Target;
-                    string message = "Draw " + args + " cards for " + target.Name + ": " + card;
-                    //this.chat.Print(message);
+                    for (int i = 0; i < numcards; i++)
+                    {
+                        card = this.deck.drawCard();
+                        cards = cards + card + "  ";
+                        if(!card.Contains("Empty"))
+                        AddDrawToPlayer(target.Name, card);
+                    }
+                    string message = "Draw " + args + " cards for " + target.Name + ": " + cards;
                     ImGui.SetClipboardText(message);
                     //var Common = new XivCommonBase(Hooks.Talk);
                     //Common.Functions.Chat.SendMessage(message);
-
                 }
                 else
                 {
@@ -140,9 +169,26 @@ namespace FFXIVGambler
             }
         }
 
+        private void AddDrawToPlayer(SeString name, string card)
+        {
+            //check if player exists in playerlist:
+            if(this.playerHands.ContainsKey(name.TextValue))
+            {
+                Hand currentHand = this.playerHands[name.TextValue];
+                currentHand.addCard(card);
+            }
+            else
+            {
+                Hand newHand = new Hand(card);
+                this.playerHands.Add(name.TextValue, newHand);
+            }
+        }
+
         private void OnCommandShuffle(string command, string args)
         {
             this.deck.reshuffleDeck();
+            this.playerHands.Clear();
+            this.dealerHand.resetHand();
             this.chat.Print("Deck Shuffled!  Fresh Deck ready!");
             this.chat.UpdateQueue();
         }
