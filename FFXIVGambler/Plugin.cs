@@ -21,6 +21,7 @@ namespace FFXIVGambler
         private const string commandDraw = "/draw";
         private const string commandShuffle = "/shuffle";
         private const string commandDealer = "/dealer";
+        private const string commandSplit = "/split";
 
         private PartyList partyMembers;
 
@@ -78,9 +79,79 @@ namespace FFXIVGambler
             {
                 HelpMessage = "Reset and Shuffle the deck."
             });
+            this.CommandManager.AddHandler(commandSplit, new CommandInfo(OnCommandSplit)
+            {
+                HelpMessage = "split the selected players hand."
+            });
+
 
             this.PluginInterface.UiBuilder.Draw += DrawUI;
             this.PluginInterface.UiBuilder.OpenConfigUi += DrawConfigUI;
+        }
+
+        private void OnCommandSplit(string command, string arguments)
+        {
+            //check if the current target has a 'split' hand:
+            if (this.targetManager.Target != null)
+            {
+                GameObject target = this.targetManager.Target;
+                string name = "" + target.Name;
+                string splitName = "split:" + name;
+                if (this.playerHands.ContainsKey(splitName))
+                {
+                    string card = this.deck.drawCard();
+                    string message = "Draw Card for " + name + ": " + card;
+                    //this.chat.Print(message);
+                    ImGui.SetClipboardText(message);
+                    //var Common = new XivCommonBase(Hooks.Talk);
+                    //Common.Functions.Chat.SendMessage(message);
+                    if (!card.Contains("Empty"))
+                        AddDrawToPlayer(splitName, card);
+                }
+                else
+                {
+                    //try to perform a split operation.
+                    Hand currentHand;
+                    Boolean hasHand = this.playerHands.TryGetValue(name, out currentHand);
+                    if (hasHand)
+                    {
+                        Hand newHand = new Hand();
+                        newHand = SplitHand(currentHand);
+                        this.playerHands.Add(splitName, newHand);
+                    }
+                    else
+                    {
+                        this.chat.Print("target doesn't have a registered hand.  Deal cards to them first!");
+                        this.chat.UpdateQueue();
+                    }
+                }
+            }
+            else
+            {
+                this.chat.Print("No Target for card!");
+                ImGui.SetClipboardText("No Target for card!");
+                this.chat.UpdateQueue();
+            }
+
+        }
+
+        private Hand SplitHand(Hand currentHand)
+        {
+            if (currentHand.getNumCards() == 2)
+            {
+                string card1 = currentHand.getCards()[0];
+                string card2 = currentHand.getCards()[1];
+                currentHand.resetHand();
+                currentHand.addCard(card1);
+
+                Hand splithand = new Hand();
+                splithand.addCard(card2);
+                return splithand;
+            }
+            else
+            {
+                return new Hand();
+            }
         }
 
         private void OnCommandDealer(string command, string args)
@@ -103,6 +174,7 @@ namespace FFXIVGambler
             this.CommandManager.RemoveHandler(commandDraw);
             this.CommandManager.RemoveHandler(commandShuffle);
             this.CommandManager.RemoveHandler(commandDealer);
+            this.CommandManager.RemoveHandler(commandSplit);
         }
 
         private void OnCommand(string command, string args)

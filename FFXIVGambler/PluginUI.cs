@@ -19,7 +19,6 @@ namespace FFXIVGambler
         private PartyList partyMembers;
         private TargetManager targetManager;
         private SortedDictionary<String, Hand> playerHands;
-        private SortedDictionary<String, int> playerTotals;
         private String dealerName;
         private Hand dealerHand;
 

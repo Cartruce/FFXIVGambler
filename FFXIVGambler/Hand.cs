@@ -39,6 +39,10 @@ namespace FFXIVGambler
             }
             return hand;
         }
+        public List<string> getCards()
+        {
+            return this.cards;
+        }
         private int parseCard(string card)
         {
             int cardValue = 0;

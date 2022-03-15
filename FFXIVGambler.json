@@ -1,13 +1,22 @@
-{
-  "Author": "Cartruce Montoya",
-  "Name": "Cartruce Montoya",
-  "Punchline": "A Plugin to support FFXIV Games of Chance",
-  "Description": "A plugin that will assist players in running games of chance within FFXIV.  Support for Blackjack in V1, other games added at a later date!",
-  "InternalName": "FFXIVGambler",
-  "ApplicableVersion": "any",
-  "Tags": [
-    "Gamble",
-    "Random",
-    "Blackjack"
-  ]
-}
+[
+    {
+        "Author": "Cartruce Montoya",
+        "Name": "FFXIV Blackjack",
+        "Description": "A plugin to run Blackjack with a proper deck of cards.",
+        "InternalName": "FFXIVGambler",
+        "AssemblyVersion": "1.0.0.0",
+        "TestingAssemblyVersion": "1.0.0.0",
+        "RepoUrl": "https://github.com/Cartruce/FFXIVGambler",
+        "ApplicableVersion": "any",
+        "DalamudApiLevel": 5,
+        "IsHide": "False",
+        "IsTestingExclusive": "False",
+        "DownloadCount": 0,
+        "LastUpdate": 0,
+        "LoadPriority": 69420,
+        "DownloadLinkInstall": "",
+        "DownloadLinkTesting": "",
+        "DownloadLinkUpdate": "",
+        "IconUrl": ""
+    }
+]
