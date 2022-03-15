@@ -36,7 +36,6 @@
 
   <ItemGroup>
     <PackageReference Include="DalamudPackager" Version="2.1.5" />
-    <PackageReference Include="XivCommon" Version="5.0.0" />
   </ItemGroup>
 
   <ItemGroup>
